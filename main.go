@@ -1,16 +1,17 @@
 package main
 
 import (
-	_ "encoding/json"
+	"encoding/json"
 	"fmt"
 	"log"
-	_ "math/rand"
+	"math/rand"
 	"net/http"
-	_ "strconv"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
+// movie struct contains a Director struct
 type Movie struct {
 	ID       string    `json:"id"`
 	Isbn     string    `json:"isbn"`
@@ -25,8 +26,62 @@ type Director struct {
 
 var movies []Movie
 
-func GetMovies(w http.ResponseWriter, r *http.Request) {
+func getMovies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(movies)
+}
 
+func deleteMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	for index, item := range movies {
+		if item.ID == params["id"] {
+			//using append to delete the selected index
+			movies = append(movies[:index], movies[index+1:]...)
+			break
+		}
+	}
+	json.NewEncoder(w).Encode(movies)
+}
+
+func getMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	for _, item := range movies {
+		if item.ID == params["id"] {
+			json.NewEncoder(w).Encode(item)
+		}
+	}
+}
+
+func createMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content=Type", "application/json")
+	var movie Movie
+	_ = json.NewDecoder(r.Body).Decode((&movie))
+	//converting int to string using strconv
+	movie.ID = strconv.Itoa(rand.Intn(100000000))
+	movies = append(movies, movie)
+	json.NewEncoder(w).Encode(movie)
+}
+
+func updateMovie(w http.ResponseWriter, r *http.Request) {
+	//set json content type
+	w.Header().Set("Content-Type", "application/json")
+	//parameters
+	params := mux.Vars(r)
+
+	//delete the movie and create it again with the changes
+	for index, item := range movies {
+		if item.ID == params["id"] {
+			movies = append(movies[:index], movies[index+1:]...)
+			var movie Movie
+			_ = json.NewDecoder(r.Body).Decode(&movie)
+			movie.ID = params["id"]
+			movies = append(movies, movie)
+			json.NewEncoder(w).Encode(movie)
+			return
+		}
+	}
 }
 
 func main() {
